@@ -35,6 +35,14 @@ TUNE_DOMAIN = "sympy"
 LR_ADAPTER = [1e-4, 3e-4, 1e-3, 3e-3]
 LR_FULL = [3e-5, 1e-4, 3e-4, 1e-3]
 
+# The first pass of the `lr` grid put *every* adapter family's optimum at
+# 3e-3 -- the top of the swept range -- while full fine-tuning's optimum came
+# out interior (3e-4, with both 1e-4 and 1e-3 worse).  Comparing a boundary
+# optimum against an interior one understates the boundary method, so the
+# adapter families get extended upward until their optimum is bracketed too.
+# Full FT needs no extension: it is already bracketed.
+LR_ADAPTER_EXT = [1e-2, 3e-2]
+
 
 def baseline(name, domain, lr, family=None):
     return {"name": name, "kind": "baseline", "baseline": name,
@@ -55,6 +63,20 @@ def grid_lr():
     for lr in LR_FULL:
         jobs.append(baseline("full_ft", TUNE_DOMAIN, lr))
     for lr in LR_ADAPTER:
+        for b in ("bitfit", "layernorm", "last_block"):
+            jobs.append(baseline(b, TUNE_DOMAIN, lr))
+        jobs.append(lora("lora_qv_r8", LORA_QV, 8, TUNE_DOMAIN, lr))
+    return jobs
+
+
+def grid_lrx():
+    """Extension of the `lr` grid: adapter families only, higher LRs.
+
+    Run after `lr`; ``09_report.py --grids lr lrx`` folds both into the single
+    best-LR lookup every later grid reads.
+    """
+    jobs = []
+    for lr in LR_ADAPTER_EXT:
         for b in ("bitfit", "layernorm", "last_block"):
             jobs.append(baseline(b, TUNE_DOMAIN, lr))
         jobs.append(lora("lora_qv_r8", LORA_QV, 8, TUNE_DOMAIN, lr))
@@ -119,22 +141,34 @@ def grid_variants(best):
     return jobs
 
 
-GRIDS = {"lr": grid_lr, "methods": grid_methods, "rank": grid_rank,
+GRIDS = {"lr": grid_lr, "lrx": grid_lrx, "methods": grid_methods, "rank": grid_rank,
          "matrix": grid_matrix, "variants": grid_variants}
+NO_LR_NEEDED = {"lr", "lrx"}
 
 
-def load_best_lrs(path: str) -> dict:
-    """Pick each family's best LR from the tuning grid."""
-    if not Path(path).exists():
-        print(f"[warn] {path} missing; falling back to defaults", flush=True)
+def load_best_lrs(*paths: str) -> dict:
+    """Pick each family's best LR across every tuning file given."""
+    recs: list[dict] = []
+    for path in paths:
+        if Path(path).exists():
+            recs.extend(json.load(open(path)))
+        else:
+            print(f"[warn] {path} missing", flush=True)
+    if not recs:
+        print("[warn] no LR tuning results; falling back to defaults", flush=True)
         return {}
     best: dict = {}
-    for r in json.load(open(path)):
+    for r in recs:
         fam = r["family"]
         if fam not in best or r["best_val"] < best[fam]["best_val"]:
             best[fam] = r
     out = {fam: rec["lr"] for fam, rec in best.items()}
-    print(f"[lr] chosen per family: {out}", flush=True)
+    print(f"[lr] chosen per family (from {len(recs)} runs): {out}", flush=True)
+    for fam, rec in best.items():
+        swept = sorted({r["lr"] for r in recs if r["family"] == fam})
+        if swept and rec["lr"] == max(swept):
+            print(f"[lr] WARNING: {fam} optimum {rec['lr']:.0e} is at the top of "
+                  f"its swept range {swept} -- extend it", flush=True)
     return out
 
 
@@ -143,7 +177,9 @@ def main() -> None:
     ap.add_argument("--grid", required=True, choices=sorted(GRIDS))
     ap.add_argument("--ckpt", default="/kaggle/working/ckpt/base.pt")
     ap.add_argument("--results", default="/kaggle/working/results")
-    ap.add_argument("--lr-json", default="/kaggle/working/results/02_lr_merged.json")
+    ap.add_argument("--lr-json", nargs="*",
+                    default=["/kaggle/working/results/02_lr_merged.json",
+                             "/kaggle/working/results/02_lrx_merged.json"])
     ap.add_argument("--steps", type=int, default=800)
     ap.add_argument("--batch-size", type=int, default=24)
     ap.add_argument("--device", default="cuda:0")
@@ -152,7 +188,7 @@ def main() -> None:
     args = ap.parse_args()
 
     fn = GRIDS[args.grid]
-    jobs = fn() if args.grid == "lr" else fn(load_best_lrs(args.lr_json))
+    jobs = fn() if args.grid in NO_LR_NEEDED else fn(load_best_lrs(*args.lr_json))
     mine = jobs[args.shard::args.nshards]
     print(f"grid={args.grid} total={len(jobs)} shard={args.shard}/{args.nshards} "
           f"-> {len(mine)} jobs", flush=True)
