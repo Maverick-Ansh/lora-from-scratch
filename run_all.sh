@@ -25,6 +25,10 @@ run_grid methods
 run_grid rank
 run_grid matrix
 run_grid variants
+# `scaling` gives rsLoRA and LoRA r=64 their own LR sweeps. Without it the
+# rsLoRA comparison runs at LoRA's LR, where rsLoRA r=64 simply diverges --
+# which measures the scaling convention, not the method.
+run_grid scaling
 
 # The subspace analysis must train its adapters at the SAME tuned LR the rest
 # of the study uses, or its two ranks are not comparable to the rank sweep.
