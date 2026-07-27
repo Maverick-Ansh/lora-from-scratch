@@ -153,9 +153,12 @@ def fig_rank(data):
     ax.set_xscale("log", base=2)
     ax.set_xticks([1, 2, 4, 8, 16, 32, 64])
     ax.set_xticklabels(["1", "2", "4", "8", "16", "32", "64"])
-    style(ax, "Rank buys almost nothing (paper Table 6)",
+    # Deliberately NOT titled with the paper's conclusion: here rank keeps
+    # paying, which is the opposite of Table 6, and the title should say what
+    # the data says.
+    style(ax, "Rank keeps paying here — the opposite of the paper's Table 6",
           xlabel="LoRA rank r  (Wq, Wv; adapter size grows 64x left to right)",
-          ylabel="bits/byte on held-out domain")
+          ylabel="bits/byte on held-out domain  (lower is better)")
     legend(ax, loc="best")
     save(fig, "rank_sweep.png")
 

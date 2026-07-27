@@ -130,11 +130,63 @@ The obvious follow-up — *does more LoRA capacity close the gap?* — is exactl
 
 ## 4. How much rank do you need? (paper Table 6)
 
-*Pending.*
+**This is the one result that does not reproduce, and it does not reproduce clearly.**
+
+The paper's Table 6 is one of its most quoted findings: on WikiSQL and MNLI, `r=1` scores within noise of `r=64` — "a rank as small as one suffices for adapting both `Wq` and `Wv`". Here, rank keeps paying, monotonically, across the whole sweep:
+
+| r | adapter params | % | sympy | torch |
+|---:|---:|---:|---:|---:|
+| 1 | 16,384 | 0.064% | 1.3271 | 1.3573 |
+| 2 | 32,768 | 0.128% | 1.3050 | 1.3306 |
+| 4 | 65,536 | 0.257% | 1.2815 | 1.2992 |
+| 8 | 131,072 | 0.512% | 1.2572 | 1.2581 |
+| 16 | 262,144 | 1.018% | 1.2398 | 1.2227 |
+| 32 | 524,288 | 2.016% | 1.2258 | 1.1945 |
+| 64 | 1,048,576 | 3.952% | **1.2253** | **1.1834** |
+
+![Rank sweep](figures/rank_sweep.png)
+
+From `r=1` to `r=64` the loss improves by **0.102 bpb on sympy and 0.174 bpb on torch** — for scale, the *entire* gap between LoRA r=8 and full fine-tuning on sympy is 0.144 bpb. Rank is not a free parameter here; it is one of the biggest levers available.
+
+There is a hint of the paper's saturation, but at a rank two orders of magnitude higher than reported: sympy is flat from r=32 to r=64 (1.2258 → 1.2253, a 0.0005 change), while torch is still improving at r=64.
+
+**Why the difference is the interesting part.** Three candidate explanations, and they are distinguishable:
+
+1. **Task vs domain.** The paper adapts a model to a *task* (classify entailment, generate SQL) it can already almost do. This adapts a model to a *domain* whose idioms it has never seen. §3 already showed the required update is large — LoRA r=8 leaves 38–46% of full fine-tuning's gain on the table — and if the update is large, low rank is a binding constraint. Table 6's finding may be specific to updates that are *small* to begin with.
+2. **Scale.** The paper's own hypothesis is that intrinsic rank *falls* as models grow; GPT-3 is 175B, this model is 25M with `d_model` 512. A rank-1 update to a 512-wide matrix is a far smaller fraction of the available directions than the paper's setting affords, so this cuts the other way: at 25M, low rank should bind harder. This study cannot separate this from (1) — it has one model size.
+3. **The `α/r` scaling.** With `α = r` the scale is held at 1 for every arm, so this sweep is not confounded by the shrinking-update artifact rsLoRA identifies — but §9 tests it directly anyway.
+
+The honest summary: **"r=1 suffices" is not a property of LoRA, it is a property of the adaptations the paper measured.** Under a genuine domain shift at small scale, rank is the difference between recovering 41% and 62% of full fine-tuning's gain.
 
 ## 5. Which matrices to adapt? (paper Table 5)
 
-*Pending.*
+Every row below trains **exactly 65,536 adapter parameters** — rank is halved as the number of adapted matrix types doubles, which is the constraint that makes the comparison mean anything.
+
+| adapted | r | sympy | torch |
+|---|---:|---:|---:|
+| `Wq` | 8 | 1.3156 | 1.3296 |
+| `Wk` | 8 | 1.3214 | 1.3377 |
+| `Wv` | 8 | 1.2828 | 1.2972 |
+| **`Wo`** | 8 | **1.2695** | **1.2772** |
+| `Wq, Wk` | 4 | 1.3145 | 1.3344 |
+| `Wq, Wv` | 4 | 1.2815 | 1.2992 |
+| `Wv, Wo` | 4 | 1.2750 | 1.2848 |
+| `Wq, Wk, Wv, Wo` | 2 | 1.2731 | 1.2900 |
+| *`+ MLP` (not budget-matched, 147,456 params)* | 2 | *1.2209* | *1.2066* |
+
+![Matrix ablation](figures/matrix_ablation.png)
+
+**What reproduces:**
+
+- **`Wk` is the worst place to spend a parameter budget**, in both domains — matching the paper, where `Wk` alone is the weakest single choice.
+- **Spreading a fixed budget across more matrix types beats concentrating it.** `Wq,Wk,Wv,Wo` at r=2 comfortably beats `Wq` at r=8 and `Wq,Wk` at r=4, despite identical parameter counts. This is the paper's central Table 5 conclusion and it holds cleanly.
+- **`Wv` beats `Wq`**, as in the paper.
+
+**What does not:**
+
+- **`Wo` alone is the best single matrix here**, and the paper's recommended `Wq,Wv` pairing is mid-table. In the paper `Wq,Wv` is the winner. The ordering here is roughly "matrices that touch the residual stream on the way *out* (`Wo`, `Wv`) beat matrices that only shape attention weights (`Wq`, `Wk`)" — which is a coherent story, since `Wq` and `Wk` only ever affect the output through a softmax, while `Wv` and `Wo` move values directly.
+
+**The modern practice wins outright.** Adapting *all* linear layers including the MLP at r=2 (147,456 params) beats `Wq,Wv` at r=8 (131,072 params) by **0.036 bpb on sympy and 0.051 bpb on torch** at a near-identical budget — and on sympy it beats `Wq,Wv` at r=64, which uses **7× more** adapter parameters. This is direct support for the shift described in [docs/modern-lora.md §1](docs/modern-lora.md): `target_modules="all-linear"` is the better default, and the attention-only convention inherited from Table 5 is leaving real quality on the table.
 
 ## 6. Subspace similarity (paper §7.2)
 

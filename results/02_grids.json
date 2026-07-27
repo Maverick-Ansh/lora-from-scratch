@@ -53,5 +53,43 @@
     {"name": "lora_qv_r8", "family": "lora", "domain": "matplotlib", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.3600},
     {"name": "last_block", "family": "last_block", "domain": "matplotlib", "lr": 0.003, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.2755},
     {"name": "full_ft", "family": "full_ft", "domain": "matplotlib", "lr": 0.0003, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.2157}
+  ],
+  "rank": [
+    {"name": "lora_qv_r1", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 1, "trainable": 16384, "trainable_pct": 0.0641, "best_bpb": 1.3271},
+    {"name": "lora_qv_r2", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 2, "trainable": 32768, "trainable_pct": 0.1284, "best_bpb": 1.3050},
+    {"name": "lora_qv_r4", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2815},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2572},
+    {"name": "lora_qv_r16", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 16, "trainable": 262144, "trainable_pct": 1.0181, "best_bpb": 1.2398},
+    {"name": "lora_qv_r32", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 32, "trainable": 524288, "trainable_pct": 2.0164, "best_bpb": 1.2258},
+    {"name": "lora_qv_r64", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 64, "trainable": 1048576, "trainable_pct": 3.9524, "best_bpb": 1.2253},
+
+    {"name": "lora_qv_r1", "family": "lora", "domain": "torch", "lr": 0.01, "r": 1, "trainable": 16384, "trainable_pct": 0.0641, "best_bpb": 1.3573},
+    {"name": "lora_qv_r2", "family": "lora", "domain": "torch", "lr": 0.01, "r": 2, "trainable": 32768, "trainable_pct": 0.1284, "best_bpb": 1.3306},
+    {"name": "lora_qv_r4", "family": "lora", "domain": "torch", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2992},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "torch", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2581},
+    {"name": "lora_qv_r16", "family": "lora", "domain": "torch", "lr": 0.01, "r": 16, "trainable": 262144, "trainable_pct": 1.0181, "best_bpb": 1.2227},
+    {"name": "lora_qv_r32", "family": "lora", "domain": "torch", "lr": 0.01, "r": 32, "trainable": 524288, "trainable_pct": 2.0164, "best_bpb": 1.1945},
+    {"name": "lora_qv_r64", "family": "lora", "domain": "torch", "lr": 0.01, "r": 64, "trainable": 1048576, "trainable_pct": 3.9524, "best_bpb": 1.1834}
+  ],
+  "matrix": [
+    {"name": "matrix_q_r8", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.3156},
+    {"name": "matrix_k_r8", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.3214},
+    {"name": "matrix_v_r8", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2828},
+    {"name": "matrix_o_r8", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2695},
+    {"name": "matrix_q+k_r4", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.3145},
+    {"name": "matrix_q+v_r4", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2815},
+    {"name": "matrix_v+o_r4", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2750},
+    {"name": "matrix_q+k+v+o_r2", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 2, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2731},
+    {"name": "matrix_all_linear_r2", "family": "matrix", "domain": "sympy", "lr": 0.01, "r": 2, "trainable": 147456, "trainable_pct": 0.5754, "best_bpb": 1.2209},
+
+    {"name": "matrix_q_r8", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.3296},
+    {"name": "matrix_k_r8", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.3377},
+    {"name": "matrix_v_r8", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2972},
+    {"name": "matrix_o_r8", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 8, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2772},
+    {"name": "matrix_q+k_r4", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.3344},
+    {"name": "matrix_q+v_r4", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2992},
+    {"name": "matrix_v+o_r4", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 4, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2848},
+    {"name": "matrix_q+k+v+o_r2", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 2, "trainable": 65536, "trainable_pct": 0.2566, "best_bpb": 1.2900},
+    {"name": "matrix_all_linear_r2", "family": "matrix", "domain": "torch", "lr": 0.01, "r": 2, "trainable": 147456, "trainable_pct": 0.5754, "best_bpb": 1.2066}
   ]
 }

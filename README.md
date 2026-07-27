@@ -4,7 +4,15 @@ A from-first-principles reimplementation of **[LoRA: Low-Rank Adaptation of Larg
 
 No `peft`, no `loralib`. Every line of the adapter is in [`lora/`](lora/), in plain PyTorch, under 700 lines including comments. `peft` appears exactly once, in a parity test, to prove the from-scratch version is numerically identical to the one the ecosystem actually runs.
 
-> **Status:** library complete and tested (27/27). Experiments in progress — see [REPORT.md](REPORT.md) for results as they land.
+> **Status:** library complete and tested (27/27), and **bit-exact against `peft`** — identical logits *and* identical gradients. Experiments in progress; see **[REPORT.md](REPORT.md)** for results as they land.
+
+### Headline result so far
+
+Adapting a 25.5M-parameter base model to three domains it has never seen (`sympy`, `torch`, `matplotlib`), every method at its own tuned learning rate:
+
+![LoRA against the baselines](figures/methods.png)
+
+**LoRA recovers 54–62% of full fine-tuning's gain while training 0.51% of the parameters** — 14× more gain per trainable parameter than the next-best method. It also *loses* to full fine-tuning, and to simply tuning the last block, which trains 24× more parameters. Both facts are reported, because the second one is what the control was built to detect: it separates "low rank helps" from "few parameters helps". See [§3](REPORT.md#3-lora-against-the-baselines).
 
 ---
 
