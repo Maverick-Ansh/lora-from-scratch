@@ -1,0 +1,57 @@
+{
+  "_note": "Slim view of the adaptation grids: the fields the figures and report tables use. Full records (with training curves) stay on the experiment box. best_bpb = bits/byte on the held-out domain's validation split, lower is better. All runs: 800 steps, batch 24 x 256 tokens, seed 1337, base checkpoint reloaded fresh per run.",
+  "lr": [
+    {"name": "full_ft", "family": "full_ft", "domain": "sympy", "lr": 3e-05, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.2017},
+    {"name": "full_ft", "family": "full_ft", "domain": "sympy", "lr": 0.0001, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.1451},
+    {"name": "full_ft", "family": "full_ft", "domain": "sympy", "lr": 0.0003, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.1127},
+    {"name": "full_ft", "family": "full_ft", "domain": "sympy", "lr": 0.001, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.1214},
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.0001, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.3869},
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.0003, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.3649},
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.001, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.3374},
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.003, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.3147},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.0001, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.4008},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.0003, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3766},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.001, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3493},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.003, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3298},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.0001, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.2643},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.0003, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.2106},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.001, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.1669},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.003, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.1664},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.0001, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.3705},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.0003, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.3377},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.001, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.3010},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.003, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2699}
+  ],
+  "lrx": [
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.01, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.2997},
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.03, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.2983},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.01, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3204},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.03, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3181},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.01, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.2027},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.03, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.3218},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2570},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.03, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2747}
+  ],
+  "methods": [
+    {"name": "zero_shot", "family": "zero_shot", "domain": "sympy", "lr": 0.0, "trainable": 0, "trainable_pct": 0.0, "best_bpb": 1.4961},
+    {"name": "layernorm", "family": "layernorm", "domain": "sympy", "lr": 0.03, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3181},
+    {"name": "bitfit", "family": "bitfit", "domain": "sympy", "lr": 0.03, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.2983},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "sympy", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2570},
+    {"name": "last_block", "family": "last_block", "domain": "sympy", "lr": 0.003, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.1657},
+    {"name": "full_ft", "family": "full_ft", "domain": "sympy", "lr": 0.0003, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.1127},
+
+    {"name": "zero_shot", "family": "zero_shot", "domain": "torch", "lr": 0.0, "trainable": 0, "trainable_pct": 0.0, "best_bpb": 1.5406},
+    {"name": "layernorm", "family": "layernorm", "domain": "torch", "lr": 0.03, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.3401},
+    {"name": "bitfit", "family": "bitfit", "domain": "torch", "lr": 0.03, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.3225},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "torch", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.2580},
+    {"name": "last_block", "family": "last_block", "domain": "torch", "lr": 0.003, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.0827},
+    {"name": "full_ft", "family": "full_ft", "domain": "torch", "lr": 0.0003, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.0169},
+
+    {"name": "zero_shot", "family": "zero_shot", "domain": "matplotlib", "lr": 0.0, "trainable": 0, "trainable_pct": 0.0, "best_bpb": 1.5329},
+    {"name": "layernorm", "family": "layernorm", "domain": "matplotlib", "lr": 0.03, "trainable": 17408, "trainable_pct": 0.0683, "best_bpb": 1.4106},
+    {"name": "bitfit", "family": "bitfit", "domain": "matplotlib", "lr": 0.03, "trainable": 45568, "trainable_pct": 0.1788, "best_bpb": 1.3978},
+    {"name": "lora_qv_r8", "family": "lora", "domain": "matplotlib", "lr": 0.01, "r": 8, "trainable": 131072, "trainable_pct": 0.5117, "best_bpb": 1.3600},
+    {"name": "last_block", "family": "last_block", "domain": "matplotlib", "lr": 0.003, "trainable": 3152384, "trainable_pct": 12.3709, "best_bpb": 1.2755},
+    {"name": "full_ft", "family": "full_ft", "domain": "matplotlib", "lr": 0.0003, "trainable": 25482240, "trainable_pct": 100.0, "best_bpb": 1.2157}
+  ]
+}

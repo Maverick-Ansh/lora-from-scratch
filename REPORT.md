@@ -97,7 +97,36 @@ Adaptation runs: 800 steps, batch 24 × 256 tokens. Metric is **bits per byte** 
 
 ## 3. LoRA against the baselines
 
-*Pending.*
+Bits/byte on each held-out domain, 800 steps, every method at its own tuned LR. Lower is better.
+
+| method | trainable | % | sympy | torch | matplotlib |
+|---|---:|---:|---:|---:|---:|
+| no adaptation | 0 | 0% | 1.4961 | 1.5406 | 1.5329 |
+| LayerNorm only | 17,408 | 0.068% | 1.3181 | 1.3401 | 1.4106 |
+| BitFit (biases) | 45,568 | 0.179% | 1.2983 | 1.3225 | 1.3978 |
+| **LoRA r=8 (Wq,Wv)** | **131,072** | **0.512%** | **1.2570** | **1.2580** | **1.3600** |
+| last block | 3,152,384 | 12.37% | 1.1657 | 1.0827 | 1.2755 |
+| full fine-tune | 25,482,240 | 100% | **1.1127** | **1.0169** | **1.2157** |
+
+![LoRA against the baselines](figures/methods.png)
+
+Read as *fraction of full fine-tuning's gain recovered*, which is the number that actually matters:
+
+| domain | full FT gain | LoRA gain | LoRA / full FT |
+|---|---:|---:|---:|
+| sympy | 0.383 | 0.239 | 62.4% |
+| torch | 0.524 | 0.283 | 54.0% |
+| matplotlib | 0.317 | 0.173 | 54.5% |
+
+**LoRA recovers 54–62% of what full fine-tuning achieves, using 0.51% of the parameters and 195× less optimizer state.** It beats every other method in its weight class — 2.9× BitFit's parameter count for consistently more gain, and comfortably ahead of LayerNorm-only.
+
+**But it does not match full fine-tuning, and `last_block` beats it.** That is the control doing its job, and it is worth being precise about what it shows. `last_block` trains 24× more parameters than LoRA r=8 and wins on all three domains. So at this scale, on this kind of shift, LoRA's advantage is **efficiency, not quality**: per trainable parameter it is far ahead (0.239 bpb from 131k parameters vs 0.330 from 3.15M — 14× the gain per parameter), but given a larger budget in a less constrained shape, the unconstrained update wins.
+
+This is not a contradiction of the paper. It is the expected behaviour under a *domain* shift as opposed to a *task* adaptation, and it matches the finding later formalised by [Biderman et al. (2024)](https://arxiv.org/abs/2405.09673): LoRA learns less on genuinely new material. The paper's own headline results are GLUE-style task adaptation, where the update needed is far smaller than "learn the idioms of a library you have never seen".
+
+The obvious follow-up — *does more LoRA capacity close the gap?* — is exactly what §4 and §5 test.
+
+> **Caveat on two baselines.** BitFit and LayerNorm-only have their tuned optimum at 3e-2, the top of the swept range, so their numbers are lower bounds. Both had flattened (≤0.003 bpb improvement over the last LR doubling) and both trail LoRA by ≥0.04 bpb, so no plausible extension reorders the table. LoRA (1e-2), last-block (3e-3) and full FT (3e-4) all have interior optima and are properly bracketed.
 
 ## 4. How much rank do you need? (paper Table 6)
 

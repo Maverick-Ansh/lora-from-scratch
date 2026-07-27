@@ -103,7 +103,9 @@ def fig_methods(data):
     domains = sorted({r["domain"] for r in recs})
     zero = {d: next(r["best_bpb"] for r in recs if r["domain"] == d and r["name"] == "zero_shot")
             for d in domains}
-    methods = [m for m in ["layernorm", "bitfit", "last_block", "lora_qv_r8", "full_ft"]
+    # Ordered by trainable-parameter budget, so the x-axis reads as "spend
+    # more" and LoRA's position relative to last-block is visible at a glance.
+    methods = [m for m in ["layernorm", "bitfit", "lora_qv_r8", "last_block", "full_ft"]
                if any(r["name"] == m for r in recs)]
 
     fig, ax = plt.subplots(figsize=(9, 4.6))
@@ -121,8 +123,10 @@ def fig_methods(data):
             ax.text(x, v + 0.004, f"{v:.3f}", ha="center", va="bottom",
                     fontsize=7.5, color=INK_2)
 
+    pct = {r["name"]: r["trainable_pct"] for r in recs}
     ax.set_xticks(range(len(methods)))
-    ax.set_xticklabels([PRETTY.get(m, m) for m in methods], fontsize=9, color=INK_2)
+    ax.set_xticklabels([f"{PRETTY.get(m, m)}\n{pct.get(m, 0):.2f}% of params"
+                        for m in methods], fontsize=9, color=INK_2)
     style(ax, "LoRA against the baselines",
           ylabel="bits/byte recovered vs no adaptation  (higher is better)")
     legend(ax, loc="upper left", ncol=3, title=None)
