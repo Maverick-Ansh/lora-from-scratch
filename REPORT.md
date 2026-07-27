@@ -2,7 +2,7 @@
 
 A self-contained reproduction of **[LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)** (Hu et al., 2021), using the from-scratch implementation in [`lora/`](lora/).
 
-> **Status: complete.** 128 adaptation runs, ~3 GPU-hours on 2× Tesla T4.
+> **Status: complete.** 106 adaptation runs (103 grid runs + 3 for the subspace analysis) plus pre-training, ~3 GPU-hours on 2× Tesla T4.
 
 ## Summary
 
@@ -32,7 +32,7 @@ So the study is made self-contained instead: **pre-train a base model on-box, th
 - **Enough runs to be conclusive.** A 25M-parameter model means the rank sweep, the matrix ablation and the LR tuning grid can all be run properly, rather than once.
 - **Every claim tested on the same base model**, so cross-experiment comparisons are exact.
 
-The paper's central claims are architecture-agnostic — they are about the *rank of the update*, not about RoBERTa — so they transfer. The claims that do **not** transfer are flagged in §9.
+The paper's central claims are architecture-agnostic — they are about the *rank of the update*, not about RoBERTa — so they transfer. What this setup cannot test is listed in §10.
 
 ### The corpus
 
@@ -165,6 +165,8 @@ The paper's Table 6 is one of its most quoted findings: on WikiSQL and MNLI, `r=
 From `r=1` to `r=64` the loss improves by **0.102 bpb on sympy and 0.174 bpb on torch** — for scale, the *entire* gap between LoRA r=8 and full fine-tuning on sympy is 0.144 bpb. Rank is not a free parameter here; it is one of the biggest levers available.
 
 There is a hint of the paper's saturation, but at a rank two orders of magnitude higher than reported: sympy is flat from r=32 to r=64 (1.2258 → 1.2253, a 0.0005 change), while torch is still improving at r=64.
+
+> **These numbers are conservative for high rank.** Every arm above ran at LR 1e-2, tuned at r=8, on the paper's own argument that `α/r` exists so that LR transfers across `r`. §9 tests that argument and finds it only approximately true: r=64 has its own optimum at 3e-3, reaching **1.2107** on sympy rather than the 1.2253 shown here. The correction makes rank look *more* valuable, so it strengthens this section's conclusion rather than threatening it.
 
 **Why the difference is the interesting part.** Three candidate explanations, and they are distinguishable:
 

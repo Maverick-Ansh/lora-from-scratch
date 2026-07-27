@@ -4,7 +4,7 @@ A from-first-principles reimplementation of **[LoRA: Low-Rank Adaptation of Larg
 
 No `peft`, no `loralib`. Every line of the adapter is in [`lora/`](lora/), in plain PyTorch, under 700 lines including comments. `peft` appears exactly once, in a parity test, to prove the from-scratch version is numerically identical to the one the ecosystem actually runs.
 
-> **Status:** complete. Library tested (27/27) and **bit-exact against `peft`** — identical logits *and* identical gradients. Full reproduction in **[REPORT.md](REPORT.md)**: 128 adaptation runs, ~3 GPU-hours on 2× T4.
+> **Status:** complete. Library tested (27/27) and **bit-exact against `peft`** — identical logits *and* identical gradients. Full reproduction in **[REPORT.md](REPORT.md)**: 106 adaptation runs, ~3 GPU-hours on 2× T4.
 
 ### What reproduced, and what did not
 
