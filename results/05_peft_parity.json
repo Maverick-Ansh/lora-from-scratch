@@ -1,0 +1,24 @@
+{
+  "r": 8,
+  "alpha": 16.0,
+  "targets": [
+    "q_proj",
+    "v_proj"
+  ],
+  "peft_version": "0.19.1",
+  "n_adapted_ours": 4,
+  "n_adapted_peft": 4,
+  "scaling": {
+    "ours": 2.0,
+    "peft": 2.0
+  },
+  "max_abs_logit_diff": 0.0,
+  "rel_logit_diff": 0.0,
+  "loss_ours": 5.585034370422363,
+  "loss_peft": 5.585034370422363,
+  "max_abs_grad_diff_A": 0.0,
+  "max_abs_grad_diff_B": 0.0,
+  "merge_note": "peft merge_adapter unavailable: 'GPT' object has no attribute 'merge_adapter'",
+  "max_abs_merged_diff": 2.980232238769531e-07,
+  "parity_ok": true
+}
