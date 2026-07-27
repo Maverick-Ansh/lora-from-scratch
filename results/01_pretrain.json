@@ -1,0 +1,36 @@
+{
+  "tag": "pretrain",
+  "cfg": {
+    "steps": 15000,
+    "batch_size": 32,
+    "block_size": 256,
+    "lr": 0.0006,
+    "min_lr_frac": 0.1,
+    "warmup": 300,
+    "weight_decay": 0.1,
+    "grad_clip": 1.0,
+    "eval_every": 1000,
+    "eval_batches": 50,
+    "seed": 1337,
+    "log_every": 250,
+    "amp": true
+  },
+  "n_params": 25482240,
+  "trainable": 25482240,
+  "wall_s": 1941.975085735321,
+  "final_val": 0.642986432313919,
+  "best_val": 0.642986432313919,
+  "final_bits_per_byte": 0.9276,
+  "zero_shot": {
+    "sympy": {"val_loss": 1.0352243387699127, "bits_per_byte": 1.4935130197509094},
+    "torch": {"val_loss": 1.0654869019985198, "bits_per_byte": 1.5371726696454096},
+    "matplotlib": {"val_loss": 1.067332763671875, "bits_per_byte": 1.5398356851277262}
+  },
+  "val_curve_step_bpb": [
+    [999, 1.1002], [1999, 0.8993], [2999, 0.8358], [3999, 0.7906], [4999, 0.7636],
+    [5999, 0.7383], [6999, 0.7163], [7999, 0.7018], [8999, 0.6877], [9999, 0.6767],
+    [10999, 0.6647], [11999, 0.6553], [12999, 0.6513], [13999, 0.6452], [14999, 0.643]
+  ],
+  "note": "val_curve values are nats/byte (cross-entropy); divide by ln 2 for bits/byte.",
+  "sample": "def compute(self, v, method=None):\n        \"\"\"\n        Compute the raw properties of the properties of this distribution.\n        \"\"\"\n        return self._dist.compute(v, method=method)\n\n    def simplefun(self, n"
+}
