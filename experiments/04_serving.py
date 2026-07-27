@@ -72,9 +72,16 @@ def add_bottleneck_adapters(model: GPT, bottleneck: int = 8) -> GPT:
 
 
 @torch.no_grad()
-def bench(model: nn.Module, batch: int, seq: int, device: str, iters: int = 30,
-          warmup: int = 10) -> float:
-    """Median-of-iters forward latency in milliseconds."""
+def bench(model: nn.Module, batch: int, seq: int, device: str, iters: int = 120,
+          warmup: int = 40) -> float:
+    """Median-of-iters forward latency in milliseconds.
+
+    Generous warmup and a median (not a mean) because the first pass through a
+    fresh module triggers cuDNN autotuning and allocator growth; a 30-iteration
+    run with 10 warmups produced a *negative* 14.7% "overhead" at batch 1,
+    which is measurement drift, not physics.  The `noise_floor` control below
+    quantifies what is left.
+    """
     model.eval()
     x = torch.randint(0, 256, (batch, seq), device=device)
     for _ in range(warmup):
@@ -130,20 +137,30 @@ def main() -> None:
         add_bottleneck_adapters(adp, bottleneck=args.r)
         t_adapter = bench(adp, batch, seq, dev)
 
+        # Noise floor: a second, independently loaded copy of the *unmodified*
+        # base model. Its "overhead" is by construction zero, so whatever this
+        # measures is the run-to-run error, and no difference smaller than it
+        # is real.
+        base2, _ = fresh(args.ckpt, dev)
+        t_base2 = bench(base2, batch, seq, dev)
+
         row = {
             "batch": batch, "seq": seq,
-            "base_ms": t_base, "lora_unmerged_ms": t_unmerged,
+            "base_ms": t_base, "base_repeat_ms": t_base2,
+            "noise_floor_pct": 100 * (t_base2 - t_base) / t_base,
+            "lora_unmerged_ms": t_unmerged,
             "lora_merged_ms": t_merged, "bottleneck_adapter_ms": t_adapter,
             "lora_merged_overhead_pct": 100 * (t_merged - t_base) / t_base,
             "lora_unmerged_overhead_pct": 100 * (t_unmerged - t_base) / t_base,
             "adapter_overhead_pct": 100 * (t_adapter - t_base) / t_base,
         }
         rows.append(row)
-        print(f"[latency] bs={batch:3d} base {t_base:7.2f}ms | merged {t_merged:7.2f}ms "
-              f"({row['lora_merged_overhead_pct']:+.1f}%) | unmerged {t_unmerged:7.2f}ms "
-              f"({row['lora_unmerged_overhead_pct']:+.1f}%) | bottleneck {t_adapter:7.2f}ms "
-              f"({row['adapter_overhead_pct']:+.1f}%)", flush=True)
-        del base, lora_m, adp
+        print(f"[latency] bs={batch:3d} base {t_base:7.2f}ms | merged "
+              f"{row['lora_merged_overhead_pct']:+5.1f}% | unmerged "
+              f"{row['lora_unmerged_overhead_pct']:+5.1f}% | bottleneck "
+              f"{row['adapter_overhead_pct']:+5.1f}% | noise floor "
+              f"{row['noise_floor_pct']:+5.1f}%", flush=True)
+        del base, base2, lora_m, adp
         torch.cuda.empty_cache()
     out["latency"] = rows
 

@@ -190,11 +190,59 @@ Every row below trains **exactly 65,536 adapter parameters** — rank is halved 
 
 ## 6. Subspace similarity (paper §7.2)
 
-*Pending.*
+The paper trains adapters at `r=8` and `r=64` on the same task and measures how much of their subspace is shared:
+
+```
+φ(A, B, i, j) = ‖ U_Aⁱ ᵀ U_Bʲ ‖²_F / min(i, j)   ∈ [0, 1]
+```
+
+Its finding: `φ(1,1) > 0.5` — the top direction is shared, the rest is largely noise. That is the mechanism behind Table 6, since if only one direction is real, `r=1` should suffice.
+
+Two controls make the number interpretable, and the second one is the whole story here:
+
+- **noise floor** — `r=64` against a random Gaussian matrix of the same shape: what φ looks like when there is nothing to agree about.
+- **ceiling** — two `r=64` adapters that differ *only* in seed: how much agreement is achievable at all.
+
+![Subspace similarity](figures/subspace_similarity.png)
+
+| layer | r=64 seed vs seed (ceiling) | r=8 vs r=64 | vs random (floor) |
+|---|---:|---:|---:|
+| `blocks.0.attn.q_proj` | 0.331 | **0.196** | 0.000 |
+| `blocks.4.attn.q_proj` | 0.003 | 0.002 | 0.000 |
+| `blocks.7.attn.v_proj` | 0.038 | 0.013 | 0.006 |
+
+**Read naively, this does not reproduce**: `φ(1,1) = 0.196` at the first block, and ~0 everywhere else, against the paper's >0.5.
+
+**Read with the controls, it partly does.** The seed-vs-seed ceiling is only 0.331 — two adapters differing in nothing but the random seed agree on their top direction only that much. Relative to what is achievable, `r=8` vs `r=64` reaches **59% of the ceiling** (0.196 / 0.331), which is real agreement, not noise: the floor is 0.000. So *conditional on a reproducible direction existing, the two ranks do find the same one.*
+
+The finding that actually matters is the ceiling itself: **outside the first block, the learned subspace is not reproducible across seeds at all** (0.003 and 0.038). There is no stable top direction to share. That is a coherent explanation for §4: if the adaptation were concentrated in one or two robust directions, `r=1` would capture them and rank would not matter — the paper's story. Here almost nothing is seed-stable, rank keeps paying, and both observations point the same way.
+
+The measurement itself is sound — the random control pins φ at 0.000–0.006 — so this is a property of these adapters, not of the estimator.
 
 ## 7. What ΔW amplifies (paper §7.3)
 
-*Pending.*
+Take the adapter's own subspace `(U, V)` from the SVD of `ΔW`, project the frozen weight into it, and compare magnitudes. Two controls decide what the answer means: a *random* subspace of the same dimension, and `W0`'s own *top-r* subspace.
+
+![Amplification](figures/amplification.png)
+
+Per-layer, `r=8` (Frobenius norms):
+
+| | ‖ΔW‖ | ‖W0‖ | W0 in ΔW's subspace | in a random subspace | in W0's own top-r |
+|---|---:|---:|---:|---:|---:|
+| `blocks.0.attn.q_proj` | 10.77 | 13.07 | 0.42 | 0.21 | 5.97 |
+| `blocks.4.attn.q_proj` | 22.20 | 18.79 | 0.41 | 0.26 | 7.84 |
+| `blocks.7.attn.v_proj` | 19.41 | 16.21 | 0.32 | 0.24 | 5.64 |
+
+**Amplification factor `‖ΔW‖_F / ‖UᵀW0V‖_F`: median 41.0 across the 16 adapted layers (range 17.4–60.4).** The paper reports ≈21.5 for `r=4` on GPT-3. Same order of magnitude, same phenomenon, and a *far* larger effect than any of the disagreements in §4–§6.
+
+This is the section that reproduces most cleanly, and the controls are what make it convincing:
+
+- **ΔW's subspace is not random.** W0's mass there (0.32–0.74) is consistently above the random-subspace baseline (0.21–0.33). The adapter is selecting directions, not stumbling into them.
+- **But it is emphatically not W0's dominant subspace.** W0's own top-`r` directions hold 5.6–9.2 — an order of magnitude more. If LoRA were simply re-scaling what the model already emphasises, the orange line in the figure would sit on the blue one. It sits a decade below it, barely above the random floor.
+
+Together: **the adapter finds directions the pre-trained weight already contains but barely uses, and multiplies them by ~40×.** That is exactly the paper's interpretation — "amplifying features that were learned but not emphasised" — and it survives a change of model, scale, task and metric.
+
+One extra data point the paper's Table 7 also reports, and which reproduces directionally: **amplification falls sharply with rank** — median 41.0 at `r=8` versus 9.3 at `r=64`. A bigger subspace spreads the same update over more directions, so each is amplified less.
 
 ## 8. Serving: latency, merging, hot-swap (paper §1, Table 1)
 

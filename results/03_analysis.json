@@ -1,0 +1,49 @@
+{
+  "_note": "Paper sections 7.2 (subspace similarity) and 7.3 (amplification). Adapters trained on the held-out sympy domain, 800 steps, lr 1e-2 (the tuned LoRA LR), Wq+Wv. phi matrices are stored for the first probe layer only; summary statistics for all three are in phi_summary.",
+  "domain": "sympy",
+  "lr": 0.01,
+  "steps": 800,
+  "r_small": 8,
+  "r_large": 64,
+  "val_loss": {"r_small": 0.8727, "r_large": 0.8493, "r_large_seed2": 0.8495},
+  "probe_layers": ["blocks.0.attn.q_proj", "blocks.4.attn.q_proj", "blocks.7.attn.v_proj"],
+
+  "phi_summary": {
+    "blocks.0.attn.q_proj": {
+      "phi_r8_vs_r64":          {"1_1": 0.1964, "4_4": 0.0810, "8_8": 0.0688},
+      "phi_r64_seed1_vs_seed2": {"1_1": 0.3309, "4_4": 0.1077, "8_8": 0.0937},
+      "phi_r64_vs_random":      {"1_1": 0.0003, "4_4": 0.0057, "8_8": 0.0167}
+    },
+    "blocks.4.attn.q_proj": {
+      "phi_r8_vs_r64":          {"1_1": 0.0022, "4_4": 0.0525, "8_8": 0.0666},
+      "phi_r64_seed1_vs_seed2": {"1_1": 0.0025, "4_4": 0.0317, "8_8": 0.0704},
+      "phi_r64_vs_random":      {"1_1": 0.0000, "4_4": 0.0047, "8_8": 0.0100}
+    },
+    "blocks.7.attn.v_proj": {
+      "phi_r8_vs_r64":          {"1_1": 0.0126, "4_4": 0.0640, "8_8": 0.1383},
+      "phi_r64_seed1_vs_seed2": {"1_1": 0.0385, "4_4": 0.1075, "8_8": 0.1661},
+      "phi_r64_vs_random":      {"1_1": 0.0057, "4_4": 0.0073, "8_8": 0.0155}
+    }
+  },
+
+  "amplification_r8": [
+    {"layer": "blocks.0.attn.q_proj", "dW_fro": 10.773, "W0_fro": 13.065, "proj_W0_on_dW_subspace": 0.4195, "proj_W0_on_random_subspace": 0.2063, "proj_W0_on_top_r_subspace": 5.965, "amplification": 25.68},
+    {"layer": "blocks.0.attn.v_proj", "dW_fro": 7.551, "W0_fro": 7.819, "proj_W0_on_dW_subspace": 0.1940, "proj_W0_on_random_subspace": 0.1141, "proj_W0_on_top_r_subspace": 3.348, "amplification": 38.92},
+    {"layer": "blocks.1.attn.q_proj", "dW_fro": 15.292, "W0_fro": 13.057, "proj_W0_on_dW_subspace": 0.5720, "proj_W0_on_random_subspace": 0.2533, "proj_W0_on_top_r_subspace": 7.212, "amplification": 26.73},
+    {"layer": "blocks.1.attn.v_proj", "dW_fro": 10.757, "W0_fro": 14.856, "proj_W0_on_dW_subspace": 0.6199, "proj_W0_on_random_subspace": 0.2388, "proj_W0_on_top_r_subspace": 7.283, "amplification": 17.35},
+    {"layer": "blocks.2.attn.q_proj", "dW_fro": 21.411, "W0_fro": 17.125, "proj_W0_on_dW_subspace": 0.7433, "proj_W0_on_random_subspace": 0.2477, "proj_W0_on_top_r_subspace": 9.083, "amplification": 28.81},
+    {"layer": "blocks.2.attn.v_proj", "dW_fro": 12.202, "W0_fro": 15.757, "proj_W0_on_dW_subspace": 0.4757, "proj_W0_on_random_subspace": 0.2622, "proj_W0_on_top_r_subspace": 7.121, "amplification": 25.65},
+    {"layer": "blocks.3.attn.q_proj", "dW_fro": 22.879, "W0_fro": 19.110, "proj_W0_on_dW_subspace": 0.6523, "proj_W0_on_random_subspace": 0.3252, "proj_W0_on_top_r_subspace": 9.151, "amplification": 35.07},
+    {"layer": "blocks.3.attn.v_proj", "dW_fro": 13.558, "W0_fro": 15.848, "proj_W0_on_dW_subspace": 0.3632, "proj_W0_on_random_subspace": 0.2560, "proj_W0_on_top_r_subspace": 6.875, "amplification": 37.33},
+    {"layer": "blocks.4.attn.q_proj", "dW_fro": 22.195, "W0_fro": 18.794, "proj_W0_on_dW_subspace": 0.4132, "proj_W0_on_random_subspace": 0.2570, "proj_W0_on_top_r_subspace": 7.841, "amplification": 53.71},
+    {"layer": "blocks.4.attn.v_proj", "dW_fro": 15.179, "W0_fro": 16.271, "proj_W0_on_dW_subspace": 0.3518, "proj_W0_on_random_subspace": 0.2939, "proj_W0_on_top_r_subspace": 6.326, "amplification": 43.15},
+    {"layer": "blocks.5.attn.q_proj", "dW_fro": 19.781, "W0_fro": 18.898, "proj_W0_on_dW_subspace": 0.3601, "proj_W0_on_random_subspace": 0.2867, "proj_W0_on_top_r_subspace": 7.264, "amplification": 54.93},
+    {"layer": "blocks.5.attn.v_proj", "dW_fro": 15.719, "W0_fro": 16.540, "proj_W0_on_dW_subspace": 0.2734, "proj_W0_on_random_subspace": 0.2831, "proj_W0_on_top_r_subspace": 6.018, "amplification": 57.50},
+    {"layer": "blocks.6.attn.q_proj", "dW_fro": 15.795, "W0_fro": 18.822, "proj_W0_on_dW_subspace": 0.3533, "proj_W0_on_random_subspace": 0.3164, "proj_W0_on_top_r_subspace": 6.595, "amplification": 44.71},
+    {"layer": "blocks.6.attn.v_proj", "dW_fro": 16.647, "W0_fro": 17.414, "proj_W0_on_dW_subspace": 0.3604, "proj_W0_on_random_subspace": 0.2634, "proj_W0_on_top_r_subspace": 6.515, "amplification": 46.18},
+    {"layer": "blocks.7.attn.q_proj", "dW_fro": 20.910, "W0_fro": 19.173, "proj_W0_on_dW_subspace": 0.4164, "proj_W0_on_random_subspace": 0.2698, "proj_W0_on_top_r_subspace": 7.189, "amplification": 50.22},
+    {"layer": "blocks.7.attn.v_proj", "dW_fro": 19.409, "W0_fro": 16.207, "proj_W0_on_dW_subspace": 0.3214, "proj_W0_on_random_subspace": 0.2354, "proj_W0_on_top_r_subspace": 5.643, "amplification": 60.40}
+  ],
+  "amplification_r8_summary": {"median": 41.03, "min": 17.35, "max": 60.40},
+  "amplification_r64_summary": {"median": 9.31, "min": 5.59, "max": 12.55}
+}

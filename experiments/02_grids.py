@@ -141,9 +141,37 @@ def grid_variants(best):
     return jobs
 
 
+def grid_scaling():
+    """Give rsLoRA its own learning rate, and check the rank sweep was fair.
+
+    The `variants` grid ran rsLoRA at the LR tuned for *LoRA*, and rsLoRA r=64
+    diverged (4.50 bpb).  That is not a finding about rsLoRA, it is the same
+    unfairness this study rejects elsewhere, mirrored: rsLoRA scales by
+    alpha/sqrt(r) instead of alpha/r, so at r=64 its effective update is 8x
+    larger and its optimal LR is correspondingly smaller.  Comparing the two
+    at one LR measures the scaling convention, not the method.
+
+    This also re-checks a choice the rank sweep made: every rank there ran at
+    the LR tuned at r=8, on the paper's own argument that alpha/r exists so
+    that LR transfers across r.  Sweeping LR at r=64 tests that argument
+    directly instead of assuming it.
+    """
+    jobs = []
+    d = TUNE_DOMAIN
+    for lr in (1e-3, 3e-3, 1e-2, 3e-2):
+        jobs.append(lora(f"lora_r64_lr{lr:g}", LORA_QV, 64, d, lr, family="lora_r64"))
+        jobs.append(lora(f"rslora_r8_lr{lr:g}", LORA_QV, 8, d, lr,
+                         family="rslora_r8", use_rslora=True))
+    # rsLoRA at r=64 needs a much lower LR: alpha/sqrt(64) is 8x alpha/64.
+    for lr in (3e-5, 1e-4, 3e-4, 1e-3, 3e-3):
+        jobs.append(lora(f"rslora_r64_lr{lr:g}", LORA_QV, 64, d, lr,
+                         family="rslora_r64", use_rslora=True))
+    return jobs
+
+
 GRIDS = {"lr": grid_lr, "lrx": grid_lrx, "methods": grid_methods, "rank": grid_rank,
-         "matrix": grid_matrix, "variants": grid_variants}
-NO_LR_NEEDED = {"lr", "lrx"}
+         "matrix": grid_matrix, "variants": grid_variants, "scaling": grid_scaling}
+NO_LR_NEEDED = {"lr", "lrx", "scaling"}
 
 
 def load_best_lrs(*paths: str) -> dict:

@@ -195,32 +195,40 @@ def fig_matrix(data):
 
 
 def fig_subspace(data):
-    """Paper 7.2: how much subspace two adapters share."""
+    """Paper 7.2: agreement between the top directions of two adapters.
+
+    Three comparisons per layer, and the two controls are what make the first
+    one readable: `vs random` is the noise floor (what phi looks like when
+    there is nothing to agree about) and `seed vs seed` is the ceiling (how
+    much agreement is even achievable when the *only* thing that changed is
+    the seed).
+    """
     if not data:
         return
-    sim = data["subspace_similarity"]
-    layer = data["probe_layers"][len(data["probe_layers"]) // 2]
-    panels = [
-        ("phi_r8_vs_r64", f"r={data['r_small']} vs r={data['r_large']}\n(same seed)"),
-        ("phi_r64_seed1_vs_seed2", f"r={data['r_large']}, seed 1337 vs 2024"),
-        ("phi_r64_vs_random", f"r={data['r_large']} vs random Gaussian"),
+    summ = data["phi_summary"]
+    layers = data["probe_layers"]
+    series = [
+        ("phi_r64_seed1_vs_seed2", f"r={data['r_large']}: seed 1337 vs 2024  (ceiling)"),
+        ("phi_r8_vs_r64", f"r={data['r_small']} vs r={data['r_large']}  (the paper's comparison)"),
+        ("phi_r64_vs_random", f"r={data['r_large']} vs random Gaussian  (noise floor)"),
     ]
-    fig, axes = plt.subplots(1, 3, figsize=(12.5, 3.9))
-    for ax, (key, title) in zip(axes, panels):
-        m = sim[layer][key]
-        im = ax.imshow(m, cmap=BLUE_RAMP, vmin=0, vmax=1, aspect="auto", origin="upper")
-        ax.set_title(title, color=INK, fontsize=10, loc="left", pad=8)
-        ax.set_xlabel("j", color=INK_2, fontsize=9)
-        ax.set_ylabel("i", color=INK_2, fontsize=9)
-        ax.tick_params(colors=MUTED, labelsize=8, length=0)
-        for s in ax.spines.values():
-            s.set_visible(False)
-    cbar = fig.colorbar(im, ax=axes, fraction=0.02, pad=0.02)
-    cbar.set_label("subspace similarity  phi(i, j)", color=INK_2, fontsize=9)
-    cbar.ax.tick_params(colors=MUTED, labelsize=8, length=0)
-    cbar.outline.set_visible(False)
-    fig.suptitle(f"Only the top direction is shared  —  {layer}",
-                 color=INK, fontsize=12, x=0.125, ha="left", fontweight="bold")
+    fig, ax = plt.subplots(figsize=(9.5, 4.4))
+    n = len(series)
+    width = 0.8 / n
+    for si, (key, label) in enumerate(series):
+        vals = [summ[L][key]["1_1"] for L in layers]
+        xs = [i + si * width - 0.4 + width / 2 for i in range(len(layers))]
+        ax.bar(xs, vals, width=width * 0.88, color=SERIES[si], label=label, zorder=3)
+        for x, v in zip(xs, vals):
+            ax.text(x, v + 0.006, f"{v:.3f}", ha="center", va="bottom",
+                    fontsize=8, color=INK_2)
+    ax.set_xticks(range(len(layers)))
+    ax.set_xticklabels([L.replace("blocks.", "block ").replace(".attn.", "  ")
+                        .replace("_proj", "") for L in layers], fontsize=9, color=INK_2)
+    style(ax, "Top-direction agreement between adapters (paper 7.2)",
+          ylabel="subspace similarity  phi(1, 1)")
+    ax.set_ylim(0, max(summ[L]["phi_r64_seed1_vs_seed2"]["1_1"] for L in layers) * 1.35)
+    legend(ax, loc="upper right")
     save(fig, "subspace_similarity.png")
 
 
