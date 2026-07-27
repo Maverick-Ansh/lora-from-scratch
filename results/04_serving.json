@@ -1,0 +1,24 @@
+{
+  "_note": "Latency measured with the serving job running ALONE on the GPU, 120 timed iterations after 40 warmup, median. noise_floor_pct is a second independently-loaded copy of the UNMODIFIED base model: its overhead is zero by construction, so it measures run-to-run error. No difference smaller than it is real.",
+  "r": 8,
+  "device": "Tesla T4",
+  "latency": [
+    {"batch": 1, "seq": 256, "base_ms": 5.51, "lora_merged_overhead_pct": 0.2, "lora_unmerged_overhead_pct": 6.4, "adapter_overhead_pct": 6.5, "noise_floor_pct": 0.3},
+    {"batch": 4, "seq": 256, "base_ms": 19.27, "lora_merged_overhead_pct": 3.0, "lora_unmerged_overhead_pct": 5.0, "adapter_overhead_pct": 5.3, "noise_floor_pct": 4.2},
+    {"batch": 16, "seq": 256, "base_ms": 80.62, "lora_merged_overhead_pct": -2.8, "lora_unmerged_overhead_pct": 3.7, "adapter_overhead_pct": 0.2, "noise_floor_pct": -3.7},
+    {"batch": 32, "seq": 256, "base_ms": 145.86, "lora_merged_overhead_pct": -0.0, "lora_unmerged_overhead_pct": 6.6, "adapter_overhead_pct": 3.9, "noise_floor_pct": -1.0}
+  ],
+  "merge_exactness": {
+    "float32": {"max_abs_logit_diff_merge": 2.146e-05},
+    "float16": {"max_abs_logit_diff_merge": 3.516e-02}
+  },
+  "serving": {
+    "adapter_bytes": 524288,
+    "adapter_kib": 512.0,
+    "full_model_bytes": 101928960,
+    "full_model_mb": 101.9,
+    "swap_ms": 1.82,
+    "n_tasks": 100,
+    "ratio": 66.0
+  }
+}

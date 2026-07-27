@@ -4,15 +4,26 @@ A from-first-principles reimplementation of **[LoRA: Low-Rank Adaptation of Larg
 
 No `peft`, no `loralib`. Every line of the adapter is in [`lora/`](lora/), in plain PyTorch, under 700 lines including comments. `peft` appears exactly once, in a parity test, to prove the from-scratch version is numerically identical to the one the ecosystem actually runs.
 
-> **Status:** library complete and tested (27/27), and **bit-exact against `peft`** — identical logits *and* identical gradients. Experiments in progress; see **[REPORT.md](REPORT.md)** for results as they land.
+> **Status:** complete. Library tested (27/27) and **bit-exact against `peft`** — identical logits *and* identical gradients. Full reproduction in **[REPORT.md](REPORT.md)**: 128 adaptation runs, ~3 GPU-hours on 2× T4.
 
-### Headline result so far
+### What reproduced, and what did not
 
-Adapting a 25.5M-parameter base model to three domains it has never seen (`sympy`, `torch`, `matplotlib`), every method at its own tuned learning rate:
+The whole study runs on an **air-gapped machine** — no network, so no pre-trained checkpoint and no dataset to download. It is therefore self-contained: pre-train a 25.5M-parameter byte-level GPT on general-purpose Python found on disk, hold out `sympy` / `torch` / `matplotlib` entirely, and adapt to those as genuine distribution shifts.
+
+| paper claim | verdict |
+|---|---|
+| Merged inference costs nothing | ✅ +0.2% at batch 1, inside a ±0.3% noise floor |
+| `ΔW` amplifies directions `W0` under-uses | ✅ ~41× amplification — not random, not `W0`'s top directions |
+| Spread a fixed budget across matrix types | ✅ all four attention matrices at r=2 beats `Wq` at r=8 |
+| **"A rank as small as one suffices"** | ❌ rank pays monotonically all the way to r=64 |
+| `Wq,Wv` is the best pairing | ❌ `Wo` alone wins here |
+| LoRA matches full fine-tuning | ❌ recovers 54–62% of it, at 0.51% of the parameters |
+
+**The pattern:** the paper's *mechanism* claims — what a low-rank update is, what it amplifies, what merging costs — reproduce cleanly on a completely different model, scale and task. The *sufficiency* claims turn out to be properties of the adaptations the paper measured, and do not survive a genuine domain shift at small scale.
 
 ![LoRA against the baselines](figures/methods.png)
 
-**LoRA recovers 54–62% of full fine-tuning's gain while training 0.51% of the parameters** — 14× more gain per trainable parameter than the next-best method. It also *loses* to full fine-tuning, and to simply tuning the last block, which trains 24× more parameters. Both facts are reported, because the second one is what the control was built to detect: it separates "low rank helps" from "few parameters helps". See [§3](REPORT.md#3-lora-against-the-baselines).
+LoRA gets **14× more gain per trainable parameter** than the next-best method — and still loses to simply tuning the last block, which trains 24× more parameters. Both facts are reported, because the second is what that control was built to detect: it separates "low rank helps" from "few parameters helps".
 
 ---
 

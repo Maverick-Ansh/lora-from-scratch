@@ -277,15 +277,20 @@ def fig_latency(data):
                 zorder=3, markeredgecolor=SURFACE, markeredgewidth=1.5)
         ax.annotate(f"{ys[-1]:+.1f}%", (xs[-1], ys[-1]), textcoords="offset points",
                     xytext=(8, 0), fontsize=8, color=INK_2, va="center")
+    # Noise floor: a second copy of the unmodified base model, whose overhead
+    # is zero by construction. Anything inside this band is unmeasurable.
+    nf = max(abs(r["noise_floor_pct"]) for r in rows)
+    ax.axhspan(-nf, nf, color=GRID, zorder=1)
+    ax.text(xs[0], nf + 0.25, f"noise floor (±{nf:.1f}%) — differences inside this band are not real",
+            fontsize=8, color=MUTED, va="bottom")
     ax.axhline(0, color=BASELINE, linewidth=1.5, zorder=2)
-    ax.text(xs[0], 0.4, "unadapted base model", fontsize=8, color=MUTED, va="bottom")
     ax.set_xscale("log", base=2)
     ax.set_xticks(xs)
     ax.set_xticklabels([str(x) for x in xs])
-    style(ax, "Merging really does cost nothing",
+    style(ax, "Merged LoRA is indistinguishable from the base model",
           xlabel="batch size (sequence length 256)",
           ylabel="forward latency overhead vs base  (%)")
-    legend(ax, loc="upper left")
+    legend(ax, loc="lower left")
     save(fig, "latency.png")
 
 

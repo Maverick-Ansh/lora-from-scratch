@@ -2,7 +2,23 @@
 
 A self-contained reproduction of **[LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)** (Hu et al., 2021), using the from-scratch implementation in [`lora/`](lora/).
 
-> **Status: experiments running.** Implementation parity (§1) is complete. The adaptation grids, subspace analysis and serving benchmarks are in flight; this file is updated as each lands.
+> **Status: complete.** 128 adaptation runs, ~3 GPU-hours on 2× Tesla T4.
+
+## Summary
+
+| paper claim | where | verdict |
+|---|---|---|
+| Implementation is LoRA (vs `peft`) | §1 | ✅ **bit-exact** — identical logits *and* gradients |
+| Merged inference has no latency cost | §8 | ✅ **holds** — +0.2% at batch 1, inside a ±0.3% noise floor |
+| `ΔW` amplifies directions `W0` under-uses | §7 | ✅ **holds** — ~41× amplification, not random, not `W0`'s top directions |
+| Spread a budget across matrix types, don't concentrate | §5 | ✅ **holds** — all four at r=2 beats `Wq` at r=8 |
+| `Wk` is the worst single matrix | §5 | ✅ **holds** |
+| `Wq,Wv` is the best pairing | §5 | ❌ `Wo` alone wins here; `Wq,Wv` is mid-table |
+| **A rank as small as 1 suffices** | §4 | ❌ **does not reproduce** — rank pays monotonically to r=64 |
+| Top singular direction is shared across ranks | §6 | ⚠️ 59% of the achievable ceiling, but the ceiling itself is low |
+| LoRA matches full fine-tuning | §3 | ❌ recovers 54–62% of it, at 0.51% of the parameters |
+
+**The one-line finding:** the paper's *mechanism* claims — what a low-rank update is, what it amplifies, what merging costs — reproduce cleanly on a completely different model, scale and task. The *sufficiency* claims — that rank 1 is enough, that `Wq,Wv` is the right pair, that LoRA matches full fine-tuning — are properties of the adaptations the paper measured, and do not survive a genuine domain shift at small scale.
 
 ---
 
@@ -246,11 +262,95 @@ One extra data point the paper's Table 7 also reports, and which reproduces dire
 
 ## 8. Serving: latency, merging, hot-swap (paper §1, Table 1)
 
-*Pending.*
+The paper's operational promise is that LoRA "introduces no inference latency", because `ΔW` has the same shape as `W0` and can be summed into it — unlike adapter layers, which add sequential depth no algebra can remove.
+
+Measured on one T4, running alone, 120 timed iterations after 40 warmup, median. The **noise floor** is a second independently loaded copy of the *unmodified* base model: its overhead is zero by construction, so it measures run-to-run error, and nothing smaller than it is real.
+
+| batch | base (ms) | LoRA merged | LoRA unmerged | bottleneck adapter | noise floor |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 5.51 | **+0.2%** | +6.4% | +6.5% | ±0.3% |
+| 4 | 19.27 | **+3.0%** | +5.0% | +5.3% | ±4.2% |
+| 16 | 80.62 | **−2.8%** | +3.7% | +0.2% | ±3.7% |
+| 32 | 145.86 | **−0.0%** | +6.6% | +3.9% | ±1.0% |
+
+![Latency](figures/latency.png)
+
+**The claim holds.** Merged LoRA sits inside the noise band at every batch size — at batch 1, where the noise floor is tightest (±0.3%), merged overhead is +0.2%. It is not "small"; it is unmeasurable, which is what merging into the weight predicts.
+
+**Unmerged LoRA is not free**: +3.7% to +6.6%, exceeding the noise floor at batch 1 and 32. That matters more than it sounds, because multi-adapter serving *requires* staying unmerged (see [docs/modern-lora.md §5](docs/modern-lora.md)) — so the real deployment choice is "zero latency, one task" versus "~5%, many tasks", not "LoRA is free".
+
+The bottleneck-adapter baseline costs +0.2% to +6.5%, overlapping the unmerged numbers. At this model size the two are not cleanly separable — the paper's Table 1 shows a much larger adapter penalty on a 175B model at small batch, where the sequential dependency cannot be hidden behind a big matmul. **What this measurement establishes is the merged-vs-unmerged difference, which is the part that is LoRA-specific.**
+
+### Merging is only exactly free in fp32
+
+| precision | max change in logits from merging |
+|---|---:|
+| float32 | 2.15e-05 |
+| float16 | **3.52e-02** |
+
+A factor of ~1,600. The merge is mathematically exact but numerically it is `W ← W + ΔW` in the storage precision, and fp16 has ~3 decimal digits. A serving stack that repeatedly merges and unmerges an fp16 model will drift; real ones keep a pristine `W0` instead. This is not in the paper, and it is the kind of thing you only find by measuring.
+
+### The deployment arithmetic
+
+| | value |
+|---|---:|
+| adapter (r=8, Wq+Wv, fp32) | **512 KiB** |
+| full model (fp32) | 101.9 MB |
+| hot-swap time | **1.82 ms** |
+| 100 tasks, naive | 10.2 GB |
+| 100 tasks, one base + 100 adapters | 154 MB |
+| ratio | **66× smaller** |
+
+At 1.82 ms a swap is cheaper than a single forward pass at batch 4 — task switching is not a bottleneck, which is exactly the property that made multi-adapter serving practical.
 
 ## 9. Variants: rsLoRA, DoRA, initialisation, α
 
-*Pending.*
+All on `sympy`, `Wq`+`Wv`, at the tuned LoRA LR of 1e-2 unless stated.
+
+### Initialisation of `A` does not matter
+
+| init of `A` | bpb |
+|---|---:|
+| `kaiming_uniform_(a=√5)` (reference impl) | 1.2570 |
+| `N(0, 0.02²)` (the paper's text) | 1.2574 |
+
+A difference of **0.0004 bpb** — nothing. The paper says "random Gaussian initialization for `A`"; [`microsoft/LoRA`](https://github.com/microsoft/LoRA) ships Kaiming. Both are fine, and the theory says why: `B = 0` is the load-bearing choice, and because `∂L/∂A ∝ Bᵀδ`, `A` receives *no gradient at all* on the first step regardless of how it was initialised (pinned by `test_A_receives_no_gradient_on_the_very_first_step`). `A` is a random projection that gets corrected once `B` moves.
+
+### α behaves like a learning-rate knob
+
+| α (r=8) | bpb |
+|---:|---:|
+| 2 | 1.2616 |
+| 8 (= r) | **1.2570** |
+| 32 | 1.2656 |
+
+Both directions are worse, and mildly so — consistent with α being a rescaling of the update that partially trades off against LR, rather than a modelling choice. At a fixed LR, α = r is best here.
+
+### rsLoRA: a different scaling, not a better method
+
+This is where the first pass got it wrong, and the correction is the interesting part. Run at LoRA's tuned LR, **rsLoRA at r=64 diverged outright (4.50 bpb)** — because `α/√r` makes its update 8× larger at r=64 than `α/r` does. That is not a finding about rsLoRA; it is the same unfairness this study rejects in §2, mirrored. So each variant got its own LR sweep:
+
+| method | best LR | bpb |
+|---|---:|---:|
+| LoRA r=8 | 1e-2 | **1.2570** |
+| rsLoRA r=8 | 1e-2 | 1.2616 |
+| LoRA r=64 | 3e-3 | 1.2107 |
+| rsLoRA r=64 | **1e-3** | **1.2093** |
+
+**Given its own learning rate, rsLoRA is indistinguishable from LoRA** — 0.005 worse at r=8, 0.001 better at r=64. What the scaling change actually does is *move the optimal learning rate*: rsLoRA r=64 peaks at 1e-3 where LoRA r=64 peaks at 3e-3, the ~3× shift predicted (coarsely, on a 3×-spaced grid) by the 8× difference in effective update size.
+
+That is a precise statement of what `α/r` versus `α/√r` is: **a learning-rate reparameterisation.** rsLoRA's benefit is that you do not have to re-tune LR when you change `r` — real convenience, not extra capacity. It also means reports of "high rank doesn't help" are confounded with LR tuning unless the sweep was redone per rank.
+
+> This also corrects §4 slightly. The rank sweep held LR at 1e-2 (tuned at r=8) on the paper's own argument that `α/r` makes LR transfer across `r`. It does not transfer perfectly: r=64's own optimum is 3e-3, giving **1.2107** rather than the 1.2253 reported there. The correction makes high rank look *better*, so §4's conclusion — rank keeps paying — strengthens rather than weakens.
+
+### DoRA
+
+| method | trainable | bpb |
+|---|---:|---:|
+| LoRA r=8 | 131,072 | **1.2570** |
+| DoRA r=8 | 139,264 | 1.2588 |
+
+No advantage here (0.0018 worse, with 6% more parameters), at LoRA's LR and without a DoRA-specific sweep — so this is a weak negative, not a refutation. DoRA's reported gains are largest at very low rank and on instruction-tuning tasks; neither describes this setup.
 
 ## 10. Limits of this reproduction
 
@@ -259,7 +359,10 @@ Stated up front, so no result here is read as more than it is:
 - **No absolute comparison to the paper's tables.** Different model, different scale, different tasks. What transfers is the *shape* of each finding — whether rank matters, which matrices matter, whether merging is free — not the numbers.
 - **25M parameters, not 175B.** The paper's strongest claim is that intrinsic rank *falls* as models grow. A single model size cannot test that, and this study does not.
 - **Language modelling, not classification.** The paper's Table 2 is GLUE accuracy; this is bits/byte. Bits/byte is a strictly more sensitive metric, which helps, but it is not the same measurement.
-- **One seed per configuration** for the grids, with the exception of the subspace analysis (which needs two seeds by construction). Differences smaller than the seed-to-seed spread reported in §6 should not be treated as real.
+- **One seed per configuration** for the grids, with the exception of the subspace analysis (which needs two seeds by construction). The two `r=64` runs that differ only in seed landed at 0.8493 and 0.8495 nats — a spread of **0.0002 nats (0.0003 bpb)** — so differences of ~0.001 bpb and up are meaningful, but the sub-0.005 gaps in §9 (DoRA vs LoRA, Kaiming vs Gaussian) are at the edge and are reported as "no difference" rather than as rankings.
+- **LR is tuned on `sympy` only**, then reused for `torch` and `matplotlib`. A per-domain sweep might shift the absolute numbers, though the method ordering is stable across all three domains.
+- **BitFit and LayerNorm-only are lower bounds.** Their tuned optima sit at the top of the swept LR range (3e-2). Both had flattened (≤0.003 bpb over the last doubling) and both trail LoRA by ≥0.04 bpb, so the ordering is safe, but their exact values are not converged.
+- **The 800-step budget is short.** Every method is compared at equal steps, so the comparison is fair, but none is trained to convergence; a longer budget could change the LoRA-vs-full-FT gap in either direction.
 - **`experiments/glue/` is not run.** The faithful RoBERTa-base GLUE reproduction of Table 2 needs pre-trained weights and a network connection. The script is written and committed so it runs when one is available; it has never executed, and nothing in this report depends on it.
 
 ---
