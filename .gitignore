@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+# Big artifacts: keep metrics (JSON) and figures (PNG), drop weights.
+*.pt
+*.bin
+*.safetensors
+runs/
+wandb/
+.DS_Store

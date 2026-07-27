@@ -1,0 +1,15 @@
+# Core (the library itself needs only torch)
+torch>=2.0
+
+# Experiments / analysis
+numpy
+matplotlib
+scipy
+
+# Tests
+pytest
+
+# Optional: parity check against the library everyone actually uses
+peft>=0.10
+transformers>=4.40
+datasets>=2.18
